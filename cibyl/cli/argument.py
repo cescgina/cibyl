@@ -13,7 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 """
-from typing import Union
+from typing import List, Set, Union
 
 from cibyl.cli.ranged_argument import (EXPRESSION_PATTERN, RANGE_OPERATORS,
                                        VALID_OPS, Range)
@@ -69,3 +69,25 @@ class Argument():
 
     def __str__(self):
         return str(self.value)
+
+
+def filter_arguments_for_sources(arguments: List[Argument],
+                                 sources_methods: Set[str]):
+    """Filter the given list of arguments by the method available from the
+    existing sources. Arguments that have a func attribute that is not provided
+    by any source will be filtered out, if the argument has no func defined it
+    will be kept.
+    :param arguments: List of arguments to consider
+    :type arguments: list
+    :param sources_methods: All methods supported in the existing sources
+    :type sources_methods: list
+    :returns: The list of arguments that are supported
+    :rtype: list
+    """
+    filtered_args = []
+    for arg in arguments:
+        method = getattr(arg, "func")
+        if method is None or (method is not None and method in
+                              sources_methods):
+            filtered_args.append(arg)
+    return filtered_args

@@ -14,7 +14,7 @@
 #    under the License.
 """
 from unittest import TestCase
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import cibyl.orchestrator
 from cibyl.config import Config
@@ -35,6 +35,17 @@ class TestOrchestrator(TestCase):
             'environments': {
                 'env1': {
                     'system1'}}}
+
+        self.valid_jenkins_system_source = {
+            'environments': {
+                'env1': {
+                    'system1': {
+                        'system_type': 'jenkins',
+                        'sources': {
+                            'jenkins': {
+                                'driver': 'jenkins',
+                                'url': ''
+                            }}}}}}
 
         self.valid_single_env_config_data = {
             'environments': {
@@ -93,7 +104,7 @@ class TestOrchestrator(TestCase):
             'environments': {
                 'env1': {
                     'system1': {
-                        'system_type': 'jenkins',
+                        'system_type': 'zuul',
                         'sources': {
                             'elasticsearch': {
                                 'driver': 'elasticsearch',
@@ -120,6 +131,17 @@ class TestOrchestrator(TestCase):
                                 'enabled': False,
                                 'repos': {}
                                 }}}}}}
+        self.valid_jenkins_system_jjb_source = {
+            'environments': {
+                'env1': {
+                    'system1': {
+                        'system_type': 'jenkins',
+                        'sources': {
+                            'jjb': {
+                                'driver': 'jenkins_job_builder',
+                                'enabled': False,
+                                'repos': {}
+                            }}}}}}
 
     def test_orchestrator_config(self):
         """Testing Orchestrator config attribute and method"""
@@ -224,7 +246,7 @@ class TestOrchestrator(TestCase):
     def test_extend_parser(self):
         """Test that extend_parser creates the right cli arguments for a single
         jenkins system."""
-        self.orchestrator.config.data = self.valid_single_env_config_data
+        self.orchestrator.config.data = self.valid_jenkins_system_source
         self.orchestrator.create_ci_environments()
         for env in self.orchestrator.environments:
             self.orchestrator.extend_parser(attributes=env.API)
@@ -237,7 +259,7 @@ class TestOrchestrator(TestCase):
     def test_extend_parser_zuul_system(self):
         """Test that extend_parser creates the right cli arguments for multiple
         environments and systems."""
-        self.orchestrator.config.data = self.valid_multiple_envs_config_data
+        self.orchestrator.config.data = self.all_sources_enabled
         self.orchestrator.create_ci_environments()
         for env in self.orchestrator.environments:
             self.orchestrator.extend_parser(attributes=env.API)
@@ -253,6 +275,20 @@ class TestOrchestrator(TestCase):
             self.orchestrator.parser.ci_args["pipelines"].level, 4)
         self.assertEqual(self.orchestrator.parser.ci_args["jobs"].level, 5)
         self.assertEqual(self.orchestrator.parser.ci_args["builds"].level, 6)
+
+    def test_extend_parser_jjb_source_builds(self):
+        """Test that extend_parser creates the right cli arguments for an
+        environment that does only have a jjb source."""
+        self.orchestrator.config.data = self.valid_jenkins_system_jjb_source
+        self.orchestrator.create_ci_environments()
+        for env in self.orchestrator.environments:
+            self.orchestrator.extend_parser(attributes=env.API)
+
+        argparse_mock = MagicMock()
+        with patch('argparse.ArgumentParser._print_message', argparse_mock):
+            # argparse raises a SystemExit when a unknown argument is parsed
+            with self.assertRaises(SystemExit):
+                self.orchestrator.parser.parse(["--jobs", "--builds"])
 
     def test_validate_environments(self):
         """Test that validate_environments filters the environments."""

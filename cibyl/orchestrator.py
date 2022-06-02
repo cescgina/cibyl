@@ -21,6 +21,7 @@ from collections import defaultdict
 from copy import deepcopy
 
 import cibyl.exceptions.config as conf_exc
+from cibyl.cli.argument import filter_arguments_for_sources
 from cibyl.cli.parser import Parser
 from cibyl.cli.query import get_query_type
 from cibyl.cli.validator import Validator
@@ -265,12 +266,15 @@ class Orchestrator:
                     # no need to query the rest
                     break
 
-    def extend_parser(self, attributes, group_name='Environment',
-                      level=0):
+    def extend_parser(self, attributes,
+                      group_name='Environment', level=0):
         """Extend parser with arguments from CI models."""
+        available_methods = self.get_all_sources_available_methods()
         for attr_dict in attributes.values():
             arguments = attr_dict.get('arguments')
             if arguments:
+                arguments = filter_arguments_for_sources(arguments,
+                                                         available_methods)
                 class_type = attr_dict.get('attr_type')
                 if class_type not in [str, list, dict, int] and \
                    hasattr(class_type, 'API'):
@@ -298,3 +302,13 @@ class Orchestrator:
                     style=output_style,
                     query=get_query_type(**self.parser.ci_args),
                     verbosity=self.parser.app_args.get('verbosity'))
+
+    def get_all_sources_available_methods(self):
+        """Collect all get_* methods implemented by the sources in the
+        configuration."""
+        available_methods = set()
+        for env in self.environments:
+            for system in env.systems:
+                for source in system.sources:
+                    available_methods.update(source.get_methods_to_query())
+        return available_methods

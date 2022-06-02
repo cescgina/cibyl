@@ -17,6 +17,7 @@ import logging
 import os
 import sys
 from tempfile import NamedTemporaryFile
+from types import MethodType
 from unittest import TestCase
 from unittest.mock import patch
 
@@ -46,8 +47,10 @@ class TestOrchestrator(TestCase):
     @patch('cibyl.orchestrator.source_information_from_method',
            return_value="")
     @patch.object(SourceMethodsStore, '_method_information_tuple')
-    @patch.object(Jenkins, 'get_jobs', side_effect=JenkinsError)
-    @patch.object(OSPJenkins, 'get_deployment', side_effect=JenkinsError)
+    @patch.object(Jenkins, 'get_jobs', side_effect=JenkinsError,
+                  spec=MethodType)
+    @patch.object(OSPJenkins, 'get_deployment', side_effect=JenkinsError,
+                  spec=MethodType)
     def test_args_level(self, jenkins_deployment, jenkins_jobs, store_mock,
                         _):
         """Test that the args level is updated properly in run_query."""
@@ -56,6 +59,12 @@ class TestOrchestrator(TestCase):
                                   ("jenkins", "get_jobs"),
                                   ("jenkins", "get_jobs"),
                                   ("jenkins", "get_jobs")]
+        # mock necessary attributes to pass the argument filters when extending
+        # the parser
+        jenkins_jobs.__name__ = "get_jobs"
+        jenkins_deployment.__name__ = "get_deployment"
+        jenkins_jobs.speed_index = {}
+        jenkins_deployment.speed_index = {}
         with NamedTemporaryFile() as config_file:
             config_file.write(b"environments:\n")
             config_file.write(b"  env:\n")

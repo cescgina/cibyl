@@ -13,6 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 """
+import inspect
 import logging
 from abc import abstractmethod
 from operator import itemgetter
@@ -25,6 +26,12 @@ from cibyl.exceptions.source import NoSupportedSourcesFound
 from cibyl.utils.attrdict import AttrDict
 
 LOG = logging.getLogger(__name__)
+
+
+def is_method_to_query(symbol):
+    """Determine whether a symbol corresponds to a source method that can be
+    used in a query (get_jobs, get_builds, ...)"""
+    return inspect.ismethod(symbol) and symbol.__name__.startswith("get_")
 
 
 def safe_request_generic(request, custom_error):
@@ -93,6 +100,13 @@ class Source(AttrDict):
     def disable(self):
         """Set source as disabled."""
         self.enabled = False
+
+    def get_methods_to_query(self):
+        """Collect a set of all methods in the source that can be used in
+        a query (get_jobs, get_builds, ...)."""
+        methods = inspect.getmembers(self, predicate=is_method_to_query)
+        # inspect getmembers returns a tuple of method name, method
+        return {method[0] for method in methods}
 
 
 def is_source_valid(source: Source, desired_attr: str):
