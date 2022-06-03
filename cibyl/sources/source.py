@@ -74,6 +74,21 @@ host{extra_info}"
 class Source(AttrDict):
     """Represents a data provider within a system."""
 
+    cli_args = {
+        'name': Argument(name='--envs', arg_type=str,
+                         description="Environment names",
+                         group_name="Environments", level=1),
+        'systems': Argument(name='--systems', arg_type=str, nargs='*',
+                            group_name="Systems", level=2,
+                            description="Systems names"),
+        'system-type': Argument(name='--system-type', arg_type=str, level=2,
+                                group_name="Systems",
+                                description="System type"),
+        'sources': Argument(name='--sources', arg_type=str, level=3,
+                            group_name="Source name", nargs="*",
+                            description="Source name")
+        }
+
     def __init__(self, name: str = None, driver: str = None, **kwargs):
         kwargs.setdefault('enabled', True)
         kwargs.setdefault('priority', 0)

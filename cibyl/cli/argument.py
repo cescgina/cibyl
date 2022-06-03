@@ -27,7 +27,7 @@ class Argument():
     def __init__(self, name: str, arg_type: object, description: str,
                  nargs: Union[str, int] = 1, func: str = None,
                  populated: bool = False, level: int = 0,
-                 ranged: bool = False,
+                 ranged: bool = False, group_name: str = None,
                  value: object = None, default: object = None):
         self.name = name
         self.arg_type = arg_type
@@ -37,6 +37,7 @@ class Argument():
         self.populated = populated
         self.level = level
         self.ranged = ranged
+        self.group_name = group_name
         if self.ranged and value:
             self.value = self.parse_ranges(value)
         else:

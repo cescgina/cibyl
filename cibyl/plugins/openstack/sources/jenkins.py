@@ -34,7 +34,7 @@ from cibyl.plugins.openstack.service import Service
 from cibyl.plugins.openstack.test_collection import TestCollection
 from cibyl.plugins.openstack.utils import translate_topology_string
 from cibyl.sources.jenkins import detect_job_info_regex, filter_jobs
-from cibyl.sources.source import speed_index
+from cibyl.sources.source import Source, speed_index
 from cibyl.utils.dicts import subset
 from cibyl.utils.files import get_file_name_from_path
 from cibyl.utils.filtering import (DEPLOYMENT_PATTERN, DVR_PATTERN_NAME,
@@ -135,6 +135,15 @@ def filter_models_set_field(job: dict, user_input: Argument,
 class Jenkins:
     """A class representation of Jenkins client."""
 
+    cli_args = Source.cli_args.copy()
+    cli_args.update({
+        'release': Argument(name='--release', arg_type=str,
+                            func='get_deployment', nargs='*',
+                            group_name='Deployment', level=4,
+                            description="Deployment release version"),
+        'spec': Argument(name='--spec', arg_type=str, func='get_deployment',
+                         nargs='*', level=4, group_name="Deployment",
+                         description="Print complete openstack deployment")})
     deployment_attr = ["topology", "release",
                        "network_backend", "storage_backend",
                        "infra_type", "dvr", "ip_version",

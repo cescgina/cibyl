@@ -24,6 +24,7 @@ from urllib.parse import urlparse
 import requests
 import urllib3
 
+from cibyl.cli.argument import Argument
 from cibyl.exceptions.jenkins import JenkinsError
 from cibyl.models.attribute import AttributeDictValue, AttributeListValue
 from cibyl.models.ci.base.build import Build
@@ -179,6 +180,11 @@ class Jenkins(ServerSource):
     jobs_last_build_query = "?tree=jobs[name,url,lastBuild[number,result]]"
     jobs_query_for_deployment = \
         "?tree=jobs[name,url,lastCompletedBuild[number,result,description]]"
+    cli_args = Source.cli_args.copy()
+    cli_args.update({
+        'jobs': Argument(name='--jobs', arg_type=str, nargs='*',
+                         description="System jobs", func='get_jobs', level=3,
+                         group_name="Jobs")})
 
     # pylint: disable=too-many-arguments
     def __init__(self, url: str, username: str = None, token: str = None,
