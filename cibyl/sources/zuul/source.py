@@ -18,8 +18,9 @@ from typing import List, MutableMapping
 
 from overrides import overrides
 
+from cibyl.cli.argument import Argument
 from cibyl.sources.server import ServerSource
-from cibyl.sources.source import speed_index
+from cibyl.sources.source import Source, speed_index
 from cibyl.sources.zuul.apis.rest import ZuulRESTClient
 from cibyl.sources.zuul.query import handle_query
 from cibyl.utils.dicts import subset
@@ -39,6 +40,23 @@ class Zuul(ServerSource):
             ... fallbacks['tenants']
             ['tenant_1', 'tenant_2']
         """
+
+    cli_args = Source.cli_args.copy()
+    cli_args.update({
+        'tenants': Argument(name='--tenants', arg_type=str, nargs='*',
+                            description='System tenants', level=3,
+                            group_name='Tenants', func='get_tenants'),
+        'projects': Argument(name='--projects', arg_type=str, nargs='*',
+                             description='Projects belonging to tenant',
+                             func='get_projects', group_name='Projects',
+                             level=4),
+        'pipelines': Argument(name='--pipelines', arg_type=str, nargs='*',
+                              description='Pipelines belonging to project',
+                              func='get_pipelines', group_name='Pipelines',
+                              level=5),
+        'jobs': Argument(name='--jobs', arg_type=str, nargs='*',
+                         description="System jobs", func='get_jobs', level=6,
+                         group_name="Jobs")})
 
     def __init__(self, name, driver, url, cert=None,
                  fallbacks=None, tenants=None, enabled=True):

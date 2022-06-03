@@ -13,12 +13,23 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 """
+from cibyl.cli.argument import Argument
 from cibyl.models.attribute import AttributeDictValue
 from cibyl.models.ci.zuul.tenant import Tenant
-from cibyl.sources.source import speed_index
+from cibyl.sources.source import Source, speed_index
 
 
 class Zuul:
+    cli_args = Source.cli_args.copy()
+    cli_args.update({
+        'release': Argument(name='--release', arg_type=str,
+                            func='get_deployment', nargs='*',
+                            group_name='Deployment', level=7,
+                            description="Deployment release version"),
+        'spec': Argument(name='--spec', arg_type=str, func='get_deployment',
+                         nargs='*', level=7, group_name="Deployment",
+                         description="Print complete openstack deployment")})
+
     @speed_index({'base': 2})
     def get_deployment(self, **kwargs):
         return AttributeDictValue(
