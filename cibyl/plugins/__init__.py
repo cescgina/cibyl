@@ -16,6 +16,7 @@
 import inspect
 import logging
 import os
+from functools import partial
 
 from cibyl.exceptions.plugin import MissingPlugin
 from cibyl.sources.source_factory import SourceFactory
@@ -41,9 +42,12 @@ def get_plugin_module_path(plugin_module):
         plugin_module.__file__)), 'sources')
 
 
-def is_plugin_class(class_obj):
+def is_plugin_class(class_obj, original_module):
+    """Check if the class_obj __module__ points at the module we are
+    inspecting, to distinguish it from cases when another source class might be
+    imported in the same module."""
     return inspect.isclass(class_obj) and \
-            "sources" in class_obj.__module__
+            original_module == class_obj.__module__
 
 
 def extend_source(plugin_name, plugin_module_path):
@@ -52,8 +56,11 @@ def extend_source(plugin_name, plugin_module_path):
                if f.endswith('.py') and f != '__init__.py']:
         mod = __import__('.'.join(
             [f"cibyl.plugins.{plugin_name}.sources", py]), fromlist=[py])
+        is_plugin_source_class = partial(is_plugin_class,
+                                         original_module=mod.__name__)
         plugin_sources.extend([source_tuple[1] for source_tuple in
-                               inspect.getmembers(mod, is_plugin_class)])
+                               inspect.getmembers(mod,
+                                                  is_plugin_source_class)])
     for plugin_source in plugin_sources:
         SourceFactory.extend_source(plugin_source)
 

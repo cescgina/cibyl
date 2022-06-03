@@ -63,3 +63,8 @@ class Environment(Model):
                 **kwargs
             )
         )
+
+    def sources_iter(self):
+        for system in self.systems:
+            for source in system.sources:
+                yield source

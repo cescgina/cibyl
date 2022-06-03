@@ -107,8 +107,7 @@ def main():
         if plugins:
             enable_plugins(plugins)
         # Add arguments from CI & product models to the parser of the app
-        for env in orchestrator.environments:
-            orchestrator.extend_parser(attributes=env.API)
+        orchestrator.extend_parser()
         # We can parse user's arguments only after we have loaded the
         # configuration and extended based on it the parser with arguments
         # from the CI models

@@ -124,9 +124,12 @@ class Parser:
         for action_group in self.argument_parser._action_groups:
             if action_group.title == group_name:
                 return action_group
-        return None
+        # If the group doesn't exists, we would like to add it
+        # so arguments are grouped based on the model class they
+        # belong to
+        return self.argument_parser.add_argument_group(group_name)
 
-    def extend(self, arguments: list, group_name: str, level: int = 0):
+    def extend(self, arguments: list):
         """Adds arguments to a specific argument parser group.
 
         :param arguments: A list of argument objects
@@ -134,14 +137,12 @@ class Parser:
         :param group_name: The name of the argument parser group
         :type group_name: str
         """
-        group = self.get_group(group_name)
-        # If the group doesn't exists, we would like to add it
-        # so arguments are grouped based on the model class they belong to
-        if not group:
-            group = self.argument_parser.add_argument_group(group_name)
-
+        group_cache = {}
         try:
             for arg in arguments:
+                group_name = arg.group_name
+                group = group_cache.get(group_name, self.get_group(group_name))
+                group_cache[group_name] = group
                 group.add_argument(
                     arg.name, type=arg.arg_type,
                     help=arg.description, nargs=arg.nargs,
@@ -149,6 +150,6 @@ class Parser:
                     ranged=arg.ranged,
                     populated=arg.populated,
                     default=arg.default,
-                    level=level)
+                    level=arg.level)
         except argparse.ArgumentError:
             pass

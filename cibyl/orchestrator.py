@@ -265,20 +265,22 @@ class Orchestrator:
                     # no need to query the rest
                     break
 
-    def extend_parser(self, attributes, group_name='Environment',
-                      level=0):
+    def _register_arguments(self):
+        arguments = {}
+        for env in self.environments:
+            for source in env.sources_iter():
+                for arg_name, arg in source.cli_args.items():
+                    if arg_name in arguments:
+                        old_arg = arguments[arg_name]
+                        old_arg.level = max(old_arg.level, arg.level)
+                    else:
+                        arguments[arg_name] = arg
+        return arguments
+
+    def extend_parser(self):
         """Extend parser with arguments from CI models."""
-        for attr_dict in attributes.values():
-            arguments = attr_dict.get('arguments')
-            if arguments:
-                class_type = attr_dict.get('attr_type')
-                if class_type not in [str, list, dict, int] and \
-                   hasattr(class_type, 'API'):
-                    self.parser.extend(arguments, group_name, level=level+1)
-                    self.extend_parser(class_type.API, class_type.__name__,
-                                       level=level+1)
-                else:
-                    self.parser.extend(arguments, group_name, level=level)
+        arguments = self._register_arguments()
+        self.parser.extend(arguments.values())
 
     def query_and_publish(self, output_style="colorized"):
         """Iterate over the environments and their systems and publish

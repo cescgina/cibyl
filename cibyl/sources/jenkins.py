@@ -31,7 +31,7 @@ from cibyl.models.ci.base.job import Job
 from cibyl.models.ci.base.stage import Stage
 from cibyl.models.ci.base.test import Test
 from cibyl.sources.server import ServerSource
-from cibyl.sources.source import safe_request_generic, speed_index
+from cibyl.sources.source import Source, safe_request_generic, speed_index
 from cibyl.utils.filtering import (apply_filters,
                                    satisfy_case_insensitive_match,
                                    satisfy_exact_match, satisfy_range_match,

@@ -58,7 +58,11 @@ class SourceFactory:
         if source_class:
             for attr_name in [a for a in dir(source)
                               if not a.startswith('__')]:
-                setattr(source_class, attr_name, getattr(source, attr_name))
+                attr = getattr(source, attr_name)
+                if attr_name == "cli_args":
+                    source_class.cli_args.update(attr)
+                else:
+                    setattr(source_class, attr_name, attr)
             LOG.debug(f"Extended source '{source_class.__name__}' \
 with plugin source")
 
