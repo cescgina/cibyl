@@ -38,7 +38,8 @@ from cibyl.models.ci.base.system import JobsSystem, System
 from cibyl.models.ci.system_factory import SystemType
 from cibyl.models.ci.zuul.system import ZuulSystem
 from cibyl.models.product.feature import Feature
-from cibyl.publisher import PublisherFactory, PublisherTarget
+from cibyl.outputs.cli.ci.env.factory import CIPrinterFactory
+from cibyl.publisher import PublisherTarget
 from cibyl.sources.source import (Source, get_source_instance_from_method,
                                   select_source_method,
                                   source_information_from_method)
@@ -47,6 +48,7 @@ from cibyl.utils.dicts import intersect_models
 from cibyl.utils.fs import File
 from cibyl.utils.paths import resolve_home
 from cibyl.utils.status_bar import StatusBar
+from cibyl.utils.strings import IndentedTextBuilder
 
 LOG = logging.getLogger(__name__)
 
@@ -395,6 +397,8 @@ class Orchestrator:
 
         command = self.parser.app_args.get('command')
         query_type = get_query_type(**self.parser.ci_args, command=command)
+        printer = CIPrinterFactory.from_style(output_style, query_type, 
+                verbosity=self.parser.app_args.get('verbosity', 0))
 
         target = PublisherTarget.TERMINAL
         file = None
@@ -406,14 +410,41 @@ class Orchestrator:
             file.delete()
             file.create()
 
-        publisher = PublisherFactory.create_publisher(
-                target=target,
-                style=output_style,
-                query=query_type,
-                verbosity=self.parser.app_args.get('verbosity', 0),
-                output_file=file)
+        output = IndentedTextBuilder()
+        is_json_output = output_style == OutputStyle.JSON
+        json_output = []
+        if is_json_output:
+            output.add("{", 0)
+            output.add('"environments": [', 1)
 
         for env in self.environments:
             query()
-            publisher.publish(environment=env)
-        publisher.finish_publishing()
+            if output_style not in (OutputStyle.JSON,):
+                output.add(printer.print_environment(env), 0)
+                print_output(output.build(), file, target)
+                output = IndentedTextBuilder()
+            else:
+                json_output.append(printer.print_environment(env))
+
+        if is_json_output:
+            output.add(",".join(json_output), 2)
+            output.add("]", 1)
+            output.add("}", 0)
+            print_output(output.build(), file, target)
+
+
+def print_output(output: str, output_file: Optional[File] = None,
+                 target: PublisherTarget = PublisherTarget.TERMINAL) -> None:
+    if target == PublisherTarget.TERMINAL:
+        LOG.info("Writing output into console...")
+        print(output)
+        return
+
+    if target == PublisherTarget.FILE:
+        LOG.info("Writing output to: '%s'...", output_file)
+        # add newline to the end out the output that is not added by the
+        # printers
+        output_file.append(output+'\n')
+        return
+
+    raise NotImplementedError(f"Unhandled target: '{target}'.")
